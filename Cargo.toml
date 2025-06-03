@@ -4,40 +4,47 @@ version = "0.1.0"
 edition = "2021"
 authors = ["kartik4091 <pithavakartik@gmail.com>"]
 description = "PDF Anti-Forensics Analysis Tool"
+build = "build.rs"
 
 [dependencies]
-# Core PDF handling
-lopdf = "0.31"
-pdf = "0.8"
+# PDF processing
+lopdf = { version = "0.31", features = ["std"] }
+pdf = { version = "0.8", features = ["embedded_images"] }
 
-# Anti-forensics & analysis
-sha2 = "0.10"
-base64 = "0.21"
-hex = "0.4"
-
-# Parallel processing
+# Core functionality
 rayon = "1.8"
-num_cpus = "1.16"
+bitflags = "2.4"
+memmap2 = "0.9"
+regex = "1.10"
 
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
+futures = "0.3"
 
-# Error handling & logging
-anyhow = "1.0"
+# Error handling
 thiserror = "1.0"
-tracing = "0.1"
-tracing-subscriber = "0.3"
+anyhow = "1.0"
 
-# CLI & user interface
-clap = { version = "4.4", features = ["derive"] }
+# CLI interface
+clap = { version = "4.4", features = ["derive", "cargo"] }
 indicatif = "0.17"
 console = "0.15"
 
-# Time and serialization
-chrono = { version = "0.4", features = ["serde"] }
+# Crypto & hashing
+sha2 = "0.10"
+aes = "0.8"
+base64 = "0.21"
+
+# Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-# File handling
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+[build-dependencies]
+cc = "1.0"
+
+[dev-dependencies]
 tempfile = "3.8"
-memmap2 = "0.9"
+criterion = "0.5"
