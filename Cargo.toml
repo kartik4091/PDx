@@ -1,10 +1,10 @@
-echo '[package]
+[package]
 name = "pdx"
 version = "0.1.0"
 edition = "2021"
 authors = ["kartik4091 <pithavakartik@gmail.com>"]
 description = "PDF Anti-Forensics Analysis Tool"
-created = "2025-06-03 19:15:08"
+created = "2025-06-03 19:22:55"
 
 [dependencies]
 tokio = { version = "1.35", features = ["full"] }
@@ -12,4 +12,12 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 clap = { version = "4.4", features = ["derive"] }
 anyhow = "1.0"
-chrono = "0.4"' > Cargo.toml  # Note the capital C
+chrono = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+async-trait = "0.1"
+bytes = "1.5"
+regex = "1.10"
+sha2 = "0.10"
+base64 = "0.21"
