@@ -6,18 +6,38 @@ authors = ["kartik4091 <pithavakartik@gmail.com>"]
 description = "PDF Anti-Forensics Analysis Tool"
 
 [dependencies]
-lopdf = "0.31"               # PDF manipulation
-regex = "1.10"              # Pattern matching
-sha2 = "0.10"              # Cryptographic hashes
-rayon = "1.8"              # Parallel processing
-tokio = { version = "1.35", features = ["full"] }  # Async runtime
-serde = { version = "1.0", features = ["derive"] } # Serialization
-serde_json = "1.0"         # JSON support
-clap = { version = "4.4", features = ["derive"] } # CLI
-indicatif = "0.17"         # Progress bars
-tracing = "0.1"           # Logging
-tracing-subscriber = "0.3" # Logging setup
-anyhow = "1.0"            # Error handling
-thiserror = "1.0"         # Error definitions
-base64 = "0.21"           # Base64 encoding/decoding
-chrono = "0.4"            # Time handling
+# Core PDF handling
+lopdf = "0.31"
+pdf = "0.8"
+
+# Anti-forensics & analysis
+sha2 = "0.10"
+base64 = "0.21"
+hex = "0.4"
+
+# Parallel processing
+rayon = "1.8"
+num_cpus = "1.16"
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Error handling & logging
+anyhow = "1.0"
+thiserror = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# CLI & user interface
+clap = { version = "4.4", features = ["derive"] }
+indicatif = "0.17"
+console = "0.15"
+
+# Time and serialization
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# File handling
+tempfile = "3.8"
+memmap2 = "0.9"
