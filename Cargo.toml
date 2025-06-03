@@ -4,11 +4,25 @@ version = "0.1.0"
 edition = "2021"
 authors = ["kartik4091 <pithavakartik@gmail.com>"]
 description = "PDF Anti-Forensics Analysis Tool"
-created = "2025-06-03 19:47:23"
+created = "2025-06-03 19:50:37"
 
 [dependencies]
-# Core dependencies - keep minimal for fast compile
-tokio = { version = "1.35", features = ["rt", "macros"] }  # Minimal tokio features
-tracing = "0.1"
+# Async runtime
+tokio = { version = "1.35", features = ["rt", "macros", "fs"] }
+
+# Error handling
 anyhow = "1.0"
+thiserror = "1.0"
+
+# CLI
 clap = { version = "4.4", features = ["derive"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time handling
+chrono = "0.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
