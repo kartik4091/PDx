@@ -8,7 +8,7 @@ mod cross_ref;
 mod linearization;
 
 pub use self::{
-    structure_handler::StructureHandler,
+    handler::StructureHandler,
     parser::PDFParser,
     cross_ref::CrossRefHandler,
     linearization::LinearizationHandler,
