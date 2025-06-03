@@ -11,6 +11,11 @@ categories = ["command-line-utilities", "development-tools", "security"]
 readme = "README.md"
 created = "2025-06-03"
 
+[workspace]
+members = [
+    "crates/*"
+]
+
 [dependencies]
 # Async Runtime
 tokio = { version = "1.35", features = ["full"] }
@@ -65,7 +70,6 @@ standard = []
 advanced = ["standard"]
 enterprise = ["advanced"]
 
-# Enable performance optimizations
 [profile.release]
 opt-level = 3
 lto = true
@@ -73,12 +77,10 @@ codegen-units = 1
 panic = "abort"
 strip = true
 
-# Development profile with debug info
 [profile.dev]
 opt-level = 0
 debug = true
 
-# Profile for running tests
 [profile.test]
 opt-level = 0
 debug = true
@@ -86,11 +88,6 @@ debug = true
 [[bench]]
 name = "pdf_analysis"
 harness = false
-
-[workspace]
-members = [
-    "crates/*"
-]
 
 [package.metadata.docs.rs]
 all-features = true
