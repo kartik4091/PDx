@@ -1,26 +1,35 @@
-//! PDx - PDF Anti-Forensics Analysis Tool
+//! PDx - PDF Anti-Forensics Analysis Tool (CLI)
+//! 
 //! Author: kartik4091
-//! Created: 2025-06-03 19:22:55 UTC
+//! Created: 2025-06-03 19:38:56 UTC
 
-use std::{path::PathBuf, sync::Arc};
-use tokio::sync::RwLock;
-use tracing::{info, warn, error, Level};
-use tracing_subscriber::FmtSubscriber;
+use std::{
+    path::{Path, PathBuf},
+    fs,
+    io::{self, Write},
+};
+
 use clap::{Parser, Subcommand};
+use tracing::{info, warn, error, Level};
+use tracing_subscriber::{FmtSubscriber, EnvFilter};
 use anyhow::Result;
+use console::style;
+use indicatif::{ProgressBar, ProgressStyle};
+use dialoguer::{Input, Select, Confirm};
+
+use pdx::{
+    PdfAnalyzer, Config, SecurityLevel, OutputFormat,
+    PdfAnalysis, utils, VERSION, BUILD_TIMESTAMP, AUTHOR
+};
 
 #[derive(Parser)]
 #[command(
     name = "pdx",
     about = "PDF Anti-Forensics Analysis Tool",
-    version,
+    version = VERSION,
     author = "kartik4091 <pithavakartik@gmail.com>"
 )]
 struct Cli {
-    /// Sets the configuration file
-    #[arg(short, long, value_name = "FILE")]
-    config: Option<PathBuf>,
-
     /// Sets the log level (error, warn, info, debug, trace)
     #[arg(short, long, default_value = "info")]
     log_level: Level,
@@ -28,6 +37,14 @@ struct Cli {
     /// Enable verbose output
     #[arg(short, long)]
     verbose: bool,
+
+    /// Configuration file
+    #[arg(short, long)]
+    config: Option<PathBuf>,
+
+    /// Number of threads to use
+    #[arg(short = 'j', long, default_value_t = num_cpus::get())]
+    threads: usize,
 
     #[command(subcommand)]
     command: Commands,
@@ -40,84 +57,78 @@ enum Commands {
         /// PDF file(s) to analyze
         #[arg(required = true)]
         files: Vec<PathBuf>,
-
-        /// Output format (text, json, yaml)
+        
+        /// Output format (text, json, detailed)
         #[arg(short, long, default_value = "text")]
         format: String,
-
-        /// Output file (stdout if not specified)
+        
+        /// Output file
         #[arg(short, long)]
         output: Option<PathBuf>,
+        
+        /// Analysis depth (1-4)
+        #[arg(short, long, default_value = "2")]
+        depth: u8,
     },
     /// Scan for security issues
     Scan {
         /// PDF file(s) to scan
         #[arg(required = true)]
         files: Vec<PathBuf>,
-
-        /// Risk threshold (0.0-1.0)
-        #[arg(short, long, default_value = "0.5")]
-        threshold: f64,
+        
+        /// Security level (low, medium, high, paranoid)
+        #[arg(short, long, default_value = "medium")]
+        level: String,
     },
-    /// Verify PDF integrity
-    Verify {
-        /// PDF file(s) to verify
-        #[arg(required = true)]
-        files: Vec<PathBuf>,
+    /// Show detailed information
+    Info {
+        /// Show system information
+        #[arg(short, long)]
+        system: bool,
+        
+        /// Show configuration
+        #[arg(short, long)]
+        config: bool,
     },
+    /// Interactive mode
+    Interactive,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Parse command line arguments
     let cli = Cli::parse();
 
     // Setup logging
+    let env_filter = EnvFilter::try_from_default_env()
+        .unwrap_or_else(|_| EnvFilter::new("info"));
+
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(cli.log_level)
+        .with_env_filter(env_filter)
         .with_target(false)
         .with_thread_ids(true)
         .with_file(true)
         .with_line_number(true)
+        .with_level(true)
+        .with_target(cli.verbose)
         .pretty()
         .build();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set tracing subscriber");
+    tracing::subscriber::set_global_default(subscriber)?;
 
-    info!("PDx v{} starting up...", env!("CARGO_PKG_VERSION"));
-    info!("Build timestamp: 2025-06-03 19:22:55 UTC");
-    info!("Author: kartik4091");
-    info!("Log level set to: {}", cli.log_level);
+    info!("PDx v{} starting up...", VERSION);
+    info!("Build timestamp: {}", BUILD_TIMESTAMP);
+    info!("Author: {}", AUTHOR);
 
-    // Process command
+    // Load configuration
+    let mut config = if let Some(config_path) = cli.config {
+        load_config(&config_path)?
+    } else {
+        Config::default()
+    };
+
+    // Update thread count from CLI
+    config.thread_count = cli.threads;
+
     match cli.command {
-        Commands::Analyze { files, format, output } => {
-            info!("Starting analysis...");
-            for file in files {
-                info!("Analyzing file: {}", file.display());
-                // TODO: Implement PDF analysis
-                println!("Analysis complete for: {}", file.display());
-            }
-        }
-        Commands::Scan { files, threshold } => {
-            info!("Starting security scan with threshold {}", threshold);
-            for file in files {
-                info!("Scanning file: {}", file.display());
-                // TODO: Implement security scan
-                println!("Scan complete for: {}", file.display());
-            }
-        }
-        Commands::Verify { files } => {
-            info!("Starting verification");
-            for file in files {
-                info!("Verifying file: {}", file.display());
-                // TODO: Implement verification
-                println!("Verification complete for: {}", file.display());
-            }
-        }
-    }
-
-    info!("PDx shutting down");
-    Ok(())
-}
+        Commands::Analyze { files, format, output, depth } => {
+            config.analysis_depth = depth;
