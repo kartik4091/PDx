@@ -8,6 +8,7 @@ repository = "https://github.com/kartik4091/pdx"
 license = "MIT"
 keywords = ["pdf", "security", "anti-forensics", "analysis"]
 categories = ["command-line-utilities", "development-tools"]
+created = "2025-06-03 19:33:21"
 
 [lib]
 name = "pdx"
@@ -44,8 +45,10 @@ pdf = "0.8"
 sha2 = "0.10"
 base64 = "0.21"
 
-# Utilities
+# Date and time
 chrono = "0.4"
+
+# Utilities
 regex = "1.10"
 bytes = "1.5"
 async-trait = "0.1"
