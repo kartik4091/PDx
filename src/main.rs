@@ -1,30 +1,12 @@
-//! PDx - PDF Anti-Forensics Analysis Tool (CLI)
-//! Author: kartik4091
-//! Created: 2025-06-03 19:50:37 UTC
-
 use std::path::PathBuf;
-use clap::{Parser, Subcommand};
-use tracing::{info, warn, error, Level};
-use tracing_subscriber::FmtSubscriber;
 use anyhow::Result;
-use pdx::PdfAnalyzer;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-const AUTHOR: &str = "kartik4091";
-const BUILD_TIMESTAMP: &str = "2025-06-03 19:50:37 UTC";
+use clap::Parser;
+use tracing::{info, error};
+use tracing_subscriber::FmtSubscriber;
 
 #[derive(Parser)]
-#[command(
-    name = "pdx",
-    about = "PDF Anti-Forensics Analysis Tool",
-    version = VERSION,
-    author = "kartik4091 <pithavakartik@gmail.com>"
-)]
+#[command(name = "pdx", about = "PDF Anti-Forensics Analysis Tool")]
 struct Cli {
-    /// Sets the log level
-    #[arg(short, long, default_value = "info")]
-    log_level: Level,
-
     /// PDF file to analyze
     #[arg(required = true)]
     file: PathBuf,
@@ -32,31 +14,93 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let cli = Cli::parse();
-
     // Setup logging
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(cli.log_level)
-        .with_target(false)
-        .pretty()
-        .build();
+        .with_max_level(tracing::Level::INFO)
+        .init();
 
-    tracing::subscriber::set_global_default(subscriber)?;
+    let cli = Cli::parse();
+    let file_path = cli.file;
 
-    info!("PDx v{} starting up...", VERSION);
-    info!("Build timestamp: {}", BUILD_TIMESTAMP);
-    info!("Author: {}", AUTHOR);
+    info!("PDx Anti-Forensics Tool");
+    info!("Author: kartik4091");
+    info!("Timestamp: 2025-06-03 19:58:30");
 
-    let analyzer = PdfAnalyzer::new(&cli.file)?;
-    match analyzer.analyze().await {
-        Ok(analysis) => {
-            info!("Analysis complete for: {}", analysis.path);
-            info!("File size: {} bytes", analysis.size);
-            info!("Timestamp: {}", analysis.timestamp);
-        }
+    if !file_path.exists() {
+        error!("File not found: {}", file_path.display());
+        std::process::exit(1);
+    }
+
+    match analyze_pdf(&file_path).await {
+        Ok(_) => info!("Analysis complete"),
         Err(e) => error!("Analysis failed: {}", e),
     }
 
-    info!("PDx shutting down");
+    Ok(())
+}
+
+async fn analyze_pdf(path: &PathBuf) -> Result<()> {
+    use lopdf::Document;
+    
+    info!("Loading PDF: {}", path.display());
+    let doc = Document::load(path)?;
+    
+    info!("PDF Version: {}.{}", doc.version.0, doc.version.1);
+    info!("Total pages: {}", doc.get_pages().len());
+    
+    // Start real analysis
+    analyze_metadata(&doc)?;
+    analyze_javascript(&doc)?;
+    analyze_images(&doc)?;
+    analyze_security(&doc)?;
+
+    Ok(())
+}
+
+fn analyze_metadata(doc: &lopdf::Document) -> Result<()> {
+    if let Some(info) = doc.get_info() {
+        info!("Analyzing metadata...");
+        for (key, value) in info.iter() {
+            if let Ok(text) = value.as_text_string() {
+                info!("{}: {}", String::from_utf8_lossy(key), text);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn analyze_javascript(doc: &lopdf::Document) -> Result<()> {
+    info!("Scanning for JavaScript...");
+    for (_, object) in doc.objects.iter() {
+        if let lopdf::Object::Stream(ref stream) = object {
+            if let Ok(data) = stream.decompressed_content() {
+                if data.windows(3).any(|w| w == b"JS ") {
+                    info!("JavaScript content found!");
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn analyze_images(doc: &lopdf::Document) -> Result<()> {
+    info!("Analyzing images...");
+    let mut image_count = 0;
+    for (_, object) in doc.objects.iter() {
+        if let lopdf::Object::Stream(ref stream) = object {
+            if stream.dict.get(b"Subtype") == Some(&lopdf::Object::Name(b"Image".to_vec())) {
+                image_count += 1;
+            }
+        }
+    }
+    info!("Found {} images", image_count);
+    Ok(())
+}
+
+fn analyze_security(doc: &lopdf::Document) -> Result<()> {
+    info!("Analyzing security...");
+    if doc.trailer.get(b"Encrypt").is_some() {
+        info!("Document is encrypted");
+    }
     Ok(())
 }
