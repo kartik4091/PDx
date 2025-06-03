@@ -2,7 +2,7 @@
 //! Created: 2025-06-03 14:05:03 UTC
 //! Author: kartik4091
 
-mod structure_handler;
+mod handler;
 mod parser;
 mod cross_ref;
 mod linearization;
